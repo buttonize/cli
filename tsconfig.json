@@ -1,0 +1,14 @@
+{
+	"extends": "@tsconfig/node18/tsconfig.json",
+	"compilerOptions": {
+		"declaration": true,
+		"module": "esnext",
+		"target": "esnext",
+		"moduleResolution": "nodenext",
+		"outDir": "./dist",
+		"allowSyntheticDefaultImports": true,
+		"jsx": "react"
+	},
+	"include": ["src", "cpx2.d.ts"],
+	"exclude": []
+}

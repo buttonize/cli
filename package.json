@@ -1,0 +1,80 @@
+{
+	"name": "@buttonize/cli",
+	"type": "module",
+	"version": "1.0.0",
+	"author": {
+		"name": "Buttonize",
+		"url": "https://buttonize.io",
+		"organization": "Buttonize"
+	},
+	"bin": {
+		"buttonize": "dist/index.js",
+		"btnz": "dist/index.js"
+	},
+	"license": "MIT",
+	"description": "CLI for working with Buttonize",
+	"main": "index.js",
+	"engines": {
+		"node": ">= 14.18.0"
+	},
+	"scripts": {
+		"prepare": "husky install",
+		"watch": "tsc -w",
+		"build": "tsc",
+		"lint": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json",
+		"lint:fix": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json --fix",
+		"test": "vitest run",
+		"tdd": "vitest --watch"
+	},
+	"keywords": [
+		"aws",
+		"aws-cdk",
+		"buttonize",
+		"cdk",
+		"serverless"
+	],
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,json}": "eslint --quiet --fix"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^17.1.2",
+		"@commitlint/config-conventional": "^17.1.0",
+		"@microsoft/eslint-plugin-sdl": "^0.2.0",
+		"@tsconfig/node18": "^18.2.0",
+		"@types/cpx": "^1.5.2",
+		"@types/ink-spinner": "^3.0.1",
+		"@types/node": "18",
+		"@types/react": "^18.2.19",
+		"@types/yargs": "^17.0.24",
+		"@typescript-eslint/eslint-plugin": "5.38.1",
+		"@typescript-eslint/parser": "5.38.1",
+		"@vitest/coverage-c8": "^0.33.0",
+		"@vitest/coverage-v8": "^0.34.1",
+		"aws-cdk-lib": "2.90.0",
+		"cpx": "^1.5.0",
+		"cpx2": "^5.0.0",
+		"eslint": "8.24.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-node": "^11.1.0",
+		"eslint-plugin-prettier": "^4.2.1",
+		"eslint-plugin-react": "^7.31.8",
+		"eslint-plugin-simple-import-sort": "^7.0.0",
+		"husky": "8.0.1",
+		"lint-staged": "11.2.6",
+		"prettier": "2.7.1",
+		"ts-morph": "^19.0.0",
+		"ts-node": "^10.9.1",
+		"tsup": "^7.2.0",
+		"typescript": "^5.1.6",
+		"vitest": "^0.34.1"
+	},
+	"dependencies": {
+		"chalk": "^5.3.0",
+		"colorette": "^2.0.20",
+		"ink": "^4.3.1",
+		"ink-spinner": "^5.0.0",
+		"ora": "^7.0.1",
+		"react": "^18.2.0",
+		"yargs": "^17.7.2"
+	}
+}
