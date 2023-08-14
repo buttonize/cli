@@ -14,7 +14,7 @@ export const watcher = async ({
 	tmpDir: string
 	onBeforeCompilation: () => void
 	onRecompiled: () => Promise<void> | void
-	onWatchStatusChange: ts.WatchStatusReporter
+	onWatchStatusChange?: ts.WatchStatusReporter
 	onError: ts.DiagnosticReporter
 }): Promise<{ close: () => void }> => {
 	const importedTs = (
@@ -22,6 +22,12 @@ export const watcher = async ({
 			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
 		)
 	).default as typeof ts
+
+	const formatHost: ts.FormatDiagnosticsHost = {
+		getCanonicalFileName: (path) => path,
+		getCurrentDirectory: () => tmpDir,
+		getNewLine: () => importedTs.sys.newLine
+	}
 
 	let tsWatcher: ts.WatchOfConfigFile<any> | undefined
 
@@ -45,8 +51,33 @@ export const watcher = async ({
 			},
 			importedTs.sys,
 			importedTs.createEmitAndSemanticDiagnosticsBuilderProgram,
-			onError,
-			onWatchStatusChange
+			(...args) => {
+				if (process.env.BTNZ_VERBOSE) {
+					Colors.line(
+						Colors.dim(
+							Colors.bold('TSC Error:'),
+							`${args[0].code}:${importedTs.flattenDiagnosticMessageText(
+								args[0].messageText,
+								formatHost.getNewLine()
+							)}`
+						)
+					)
+				}
+				onError(...args)
+			},
+			(...args) => {
+				if (process.env.BTNZ_VERBOSE) {
+					Colors.line(
+						Colors.dim(
+							Colors.bold('TSC Info:'),
+							importedTs.formatDiagnostic(args[0], formatHost)
+						)
+					)
+				}
+				if (typeof onWatchStatusChange !== 'undefined') {
+					onWatchStatusChange(...args)
+				}
+			}
 		)
 
 		const origCreateProgram = host.createProgram
