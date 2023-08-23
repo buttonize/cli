@@ -55,7 +55,13 @@ export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
 		errors.push(`${err}`)
 	}
 
-	sendResponse({ stacks, errors })
+	sendResponse({
+		stacks,
+		errors: errors.map((err) =>
+			// In order to make sure all error messages from CDK are relative to CWD and not tmpDir
+			err.replaceAll(new RegExp(`(\/private)?${tmpDir}\/?`, 'g'), '')
+		)
+	})
 }
 
 process.on('message', (message) => {

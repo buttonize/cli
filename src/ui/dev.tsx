@@ -1,46 +1,73 @@
-import { Box, Newline, Text } from 'ink'
+import { Box, Text, useApp, useInput } from 'ink'
 import Spinner from 'ink-spinner'
 import React, { useEffect, useState } from 'react'
-import type * as ts from 'typescript'
 
-import { buildCdkTree } from '../lib/cdk.js'
-import { CdkForkedOutput } from '../lib/types.js'
-import { watcher } from '../lib/watcher.js'
+import { extractAppsFromStacks } from '../lib/cdk.js'
+import { CdkForkedErrors } from '../lib/types.js'
+import { WatcherEvents } from '../lib/watcher.js'
+import { Emitter } from '../types.js'
+import { InverseBoxText } from './InverseBoxText.js'
 import { formatTsErrorMessage } from './utils.js'
 
-export const Dev: React.FC<{ tmpDir: string }> = ({ tmpDir }) => {
+type DevProps = {
+	tmpDir: string
+	watcher: Emitter<WatcherEvents>
+}
+
+export const Dev: React.FC<DevProps> = ({ tmpDir, watcher }) => {
 	const [status, setStatus] = useState<
 		'init' | 'compilingTs' | 'buildingCdkTree' | 'built'
 	>('init')
 
-	const [output, setOutput] = useState<CdkForkedOutput | undefined>()
+	const [output, setOutput] = useState<
+		{ apps: any; errors: CdkForkedErrors } | undefined
+	>()
 
 	const [tsError, setTsError] = useState<string | undefined>()
 
+	const [generalError, setGeneralError] = useState<string | undefined>()
+
+	const { exit } = useApp()
+
+	useInput((input, key) => {
+		if (key.escape || input === 'q') {
+			exit()
+		}
+	})
+
 	useEffect(() => {
-		const w = watcher({
-			tmpDir,
-			onBeforeCompilation() {
-				setStatus('compilingTs')
-				setTsError(undefined)
-			},
-			async onRecompiled() {
-				setStatus('buildingCdkTree')
+		const beforeRecompilation = (): void => {
+			setStatus('compilingTs')
+			setTsError(undefined)
+		}
+		const recompiled = (): void => setStatus('buildingCdkTree')
+		const builtCdkStacks = (event: WatcherEvents['builtCdkStacks']): void => {
+			setStatus('built')
 
-				const { stacks, errors } = await buildCdkTree(tmpDir)
-				setOutput({ stacks, errors })
+			setOutput({
+				apps: extractAppsFromStacks(event.stacks),
+				errors: event.errors
+			})
+		}
+		const tsError = async (event: WatcherEvents['tsError']): Promise<void> =>
+			setTsError(await formatTsErrorMessage(tmpDir, event.diagnostic))
+		const tsConfigError = (): void =>
+			setGeneralError('tsconfig.json not found.')
 
-				setStatus('built')
-			},
-			onError: async (diagnostic: ts.Diagnostic) => {
-				setTsError(await formatTsErrorMessage(tmpDir, diagnostic))
-			}
-		})
+		watcher
+			.on('beforeRecompilation', beforeRecompilation)
+			.on('recompiled', recompiled)
+			.on('builtCdkStacks', builtCdkStacks)
+			.on('tsError', tsError)
+			.on('tsConfigError', tsConfigError)
 
 		return () => {
-			w.then((wtch) => {
-				wtch.close()
-			})
+			watcher
+				.off('beforeRecompilation', beforeRecompilation)
+				.off('recompiled', recompiled)
+				.off('builtCdkStacks', builtCdkStacks)
+				.off('tsError', tsError)
+				.off('tsConfigError', tsConfigError)
 		}
 	}, [])
 
@@ -53,17 +80,22 @@ export const Dev: React.FC<{ tmpDir: string }> = ({ tmpDir }) => {
 					</Text>
 				</Box>
 				<Box width="100%">
-					<Text inverse>
-						{new Array(tsError.length + 2)
-							.fill(1)
-							.map(() => ' ')
-							.join('')}
-						<Newline /> {tsError} <Newline />
-						{new Array(tsError.length + 2)
-							.fill(1)
-							.map(() => ' ')
-							.join('')}
+					<InverseBoxText>{tsError}</InverseBoxText>
+				</Box>
+			</Box>
+		)
+	}
+
+	if (typeof generalError !== 'undefined') {
+		return (
+			<Box flexWrap="wrap">
+				<Box borderStyle="single" paddingX={10}>
+					<Text color="red" bold>
+						Error:
 					</Text>
+				</Box>
+				<Box width="100%">
+					<InverseBoxText>{`${generalError}: ${generalError}`}</InverseBoxText>
 				</Box>
 			</Box>
 		)
@@ -92,6 +124,22 @@ export const Dev: React.FC<{ tmpDir: string }> = ({ tmpDir }) => {
 				</Box>
 			)
 		case 'built':
+			if (typeof output !== 'undefined' && output?.errors.length > 0) {
+				return (
+					<Box flexWrap="wrap">
+						<Box borderStyle="single" paddingX={10}>
+							<Text color="red" bold>
+								CDK Build error:
+							</Text>
+						</Box>
+						{output.errors.map((err, i) => (
+							<Box width="100%" key={i} paddingBottom={1}>
+								<InverseBoxText>{err}</InverseBoxText>
+							</Box>
+						))}
+					</Box>
+				)
+			}
 			return (
 				<Box flexWrap="wrap">
 					<Box borderStyle="single" paddingX={10}>
@@ -100,7 +148,10 @@ export const Dev: React.FC<{ tmpDir: string }> = ({ tmpDir }) => {
 						</Text>
 					</Box>
 					<Box borderStyle="single" width="100%">
-						<Text>{JSON.stringify(output)}</Text>
+						<Text>
+							To start live development go to:{' '}
+							<Text color={'blueBright'}>http://localhost:3000/v2</Text>
+						</Text>
 					</Box>
 				</Box>
 			)

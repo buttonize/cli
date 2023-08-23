@@ -9,6 +9,6 @@
 		"allowSyntheticDefaultImports": true,
 		"jsx": "react"
 	},
-	"include": ["src", "cpx2.d.ts"],
+	"include": ["src", "cpx2.d.ts", "cfn-resolver-lib.d.ts"],
 	"exclude": []
 }

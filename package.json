@@ -45,6 +45,7 @@
 		"@types/ink-spinner": "^3.0.1",
 		"@types/node": "18",
 		"@types/react": "^18.2.19",
+		"@types/ws": "^8.5.5",
 		"@types/yargs": "^17.0.24",
 		"@typescript-eslint/eslint-plugin": "5.38.1",
 		"@typescript-eslint/parser": "5.38.1",
@@ -69,12 +70,17 @@
 		"vitest": "^0.34.1"
 	},
 	"dependencies": {
+		"@trpc/server": "^10.37.1",
+		"cfn-resolver-lib": "^1.1.8",
 		"chalk": "^5.3.0",
 		"colorette": "^2.0.20",
+		"http-terminator": "^3.2.0",
 		"ink": "^4.3.1",
 		"ink-spinner": "^5.0.0",
+		"jsonpath-plus": "^7.2.0",
 		"ora": "^7.0.1",
 		"react": "^18.2.0",
+		"ws": "^8.13.0",
 		"yargs": "^17.7.2"
 	}
 }

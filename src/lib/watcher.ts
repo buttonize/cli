@@ -1,35 +1,58 @@
 import cpx2 from 'cpx2'
+import { EventEmitter } from 'events'
 import * as path from 'path'
 import type * as ts from 'typescript'
 
 import { Colors } from '../colors.js'
+import { Emitter } from '../types.js'
+import { buildCdkTree, extractAppsFromStacks } from './cdk.js'
+import { CdkForkedErrors, CdkForkedStacks } from './types.js'
 
-export const watcher = async ({
-	tmpDir,
-	onBeforeCompilation,
-	onRecompiled,
-	onWatchStatusChange,
-	onError
+export type WatcherEvents = {
+	tsConfigError: {}
+	tsError: {
+		diagnostic: ts.Diagnostic
+	}
+	watchStatusChange: {
+		diagnostic: ts.Diagnostic
+		newLine: string
+		options: ts.CompilerOptions
+		errorCount?: number
+	}
+	recompiled: {}
+	beforeRecompilation: {}
+	builtCdkStacks: {
+		stacks: CdkForkedStacks
+		errors: CdkForkedErrors
+	}
+	builtApps: {
+		apps: {
+			[stackId: string]: { [appId: string]: any }
+		}
+	}
+}
+
+export const createWatcher = async ({
+	tmpDir
 }: {
 	tmpDir: string
-	onBeforeCompilation: () => void
-	onRecompiled: () => Promise<void> | void
-	onWatchStatusChange?: ts.WatchStatusReporter
-	onError: ts.DiagnosticReporter
-}): Promise<{ close: () => void }> => {
+}): Promise<{ emitter: Emitter<WatcherEvents>; close: () => void }> => {
 	const importedTs = (
 		await import(
 			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
 		)
 	).default as typeof ts
 
+	let tsWatcher: ts.WatchOfConfigFile<any> | undefined
+	let fsWatcher: cpx2.Watcher | undefined
+
+	const emitter = new EventEmitter() as Emitter<WatcherEvents>
+
 	const formatHost: ts.FormatDiagnosticsHost = {
 		getCanonicalFileName: (path) => path,
 		getCurrentDirectory: () => tmpDir,
 		getNewLine: () => importedTs.sys.newLine
 	}
-
-	let tsWatcher: ts.WatchOfConfigFile<any> | undefined
 
 	const watchTs = (): void => {
 		const tsConfigPath = importedTs.findConfigFile(
@@ -39,7 +62,8 @@ export const watcher = async ({
 		)
 
 		if (!tsConfigPath) {
-			throw new Error("Could not find a valid 'tsconfig.json'.")
+			emitter.emit('tsConfigError', {})
+			return
 		}
 
 		const host = importedTs.createWatchCompilerHost(
@@ -51,32 +75,42 @@ export const watcher = async ({
 			},
 			importedTs.sys,
 			importedTs.createEmitAndSemanticDiagnosticsBuilderProgram,
-			(...args) => {
+			(diagnostic) => {
 				if (process.env.BTNZ_VERBOSE) {
 					Colors.line(
 						Colors.dim(
 							Colors.bold('TSC Error:'),
-							`${args[0].code}:${importedTs.flattenDiagnosticMessageText(
-								args[0].messageText,
+							`${diagnostic.code}:${importedTs.flattenDiagnosticMessageText(
+								diagnostic.messageText,
 								formatHost.getNewLine()
 							)}`
 						)
 					)
 				}
-				onError(...args)
+
+				emitter.emit('tsError', { diagnostic })
 			},
-			(...args) => {
+			(
+				diagnostic: ts.Diagnostic,
+				newLine: string,
+				options: ts.CompilerOptions,
+				errorCount?: number
+			) => {
 				if (process.env.BTNZ_VERBOSE) {
 					Colors.line(
 						Colors.dim(
 							Colors.bold('TSC Info:'),
-							importedTs.formatDiagnostic(args[0], formatHost)
+							importedTs.formatDiagnostic(diagnostic, formatHost)
 						)
 					)
 				}
-				if (typeof onWatchStatusChange !== 'undefined') {
-					onWatchStatusChange(...args)
-				}
+
+				emitter.emit('watchStatusChange', {
+					diagnostic,
+					newLine,
+					options,
+					errorCount
+				})
 			}
 		)
 
@@ -87,14 +121,7 @@ export const watcher = async ({
 			host,
 			oldProgram
 		): ts.EmitAndSemanticDiagnosticsBuilderProgram => {
-			try {
-				onBeforeCompilation()
-			} catch (err) {
-				Colors.line(
-					Colors.bold(Colors.danger(`onBeforeCompilation handler error:`))
-				)
-				console.error(err)
-			}
+			emitter.emit('beforeRecompilation', {})
 
 			return origCreateProgram(rootNames, options, host, oldProgram)
 		}
@@ -105,12 +132,17 @@ export const watcher = async ({
 		>
 		host.afterProgramCreate = async (program): Promise<void> => {
 			setTimeout(async () => {
-				try {
-					await onRecompiled()
-				} catch (err) {
-					Colors.line(Colors.bold(Colors.danger(`onRecompiled handler error:`)))
-					console.error(err)
-				}
+				emitter.emit('recompiled', {})
+
+				const { stacks, errors } = await buildCdkTree(tmpDir)
+
+				emitter.emit('builtCdkStacks', { stacks, errors })
+
+				const apps = extractAppsFromStacks(stacks)
+
+				emitter.emit('builtApps', {
+					apps
+				})
 			}, 100)
 
 			origPostProgramCreate(program)
@@ -119,15 +151,16 @@ export const watcher = async ({
 		tsWatcher = importedTs.createWatchProgram(host)
 	}
 
-	const fsWatcher = cpx2.watch('**/*', tmpDir, {
-		ignore: ['!node_modules', '!.git']
+	fsWatcher = cpx2.watch('**/*', tmpDir, {
+		ignore: ['node_modules', '.git']
 	})
 	fsWatcher.on('watch-ready', () => watchTs())
 
 	return {
-		close: (): void => {
-			fsWatcher.close()
+		emitter,
+		close(): void {
 			tsWatcher?.close()
+			fsWatcher?.close()
 		}
 	}
 }
