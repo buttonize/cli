@@ -5,17 +5,19 @@ import NodeEvaluator, { NodeEvaluatorOptions } from 'cfn-resolver-lib'
 import { EventEmitter } from 'events'
 
 import { Emitter } from '../types.js'
-import { CdkWatcherEvents } from './cdkWatcher.js'
+import { CdkWatcherEmitter, CdkWatcherEvent } from './cdkWatcher.js'
 import { getSdk } from './sdk.js'
 import { CdkForkedErrors, CdkForkedStack, CdkForkedStacks } from './types.js'
 
-export type AppWatcherEvents = {
-	rebuilding: {}
-	done: {
-		apps: any
-		errors: CdkForkedErrors
-	}
-}
+export type AppWatcherEvent =
+	| { name: 'rebuilding' }
+	| {
+			name: 'done'
+			apps: object
+			errors: CdkForkedErrors
+	  }
+
+export type AppWatcherEmitter = Emitter<{ event: AppWatcherEvent }>
 
 let deployedStackDataCache: {
 	[key: string]: Awaited<ReturnType<typeof tryToFetchDeployedStack>>
@@ -28,42 +30,54 @@ const resetDeployedStackDataCache = (): void => {
 export const createAppWatcher = async ({
 	cdkEmitter
 }: {
-	cdkEmitter: Emitter<CdkWatcherEvents>
+	cdkEmitter: CdkWatcherEmitter
 }): Promise<{
-	appEmitter: Emitter<AppWatcherEvents>
+	appEmitter: AppWatcherEmitter
 	rebuild: () => void
 	close: () => void
 }> => {
-	const appEmitter = new EventEmitter() as Emitter<AppWatcherEvents>
+	const appEmitter = new EventEmitter() as AppWatcherEmitter
 
-	let latestCdkEvent: CdkWatcherEvents['done'] | undefined
+	let latestCdkEvent:
+		| {
+				name: 'done'
+				stacks: CdkForkedStacks
+				errors: CdkForkedErrors
+		  }
+		| undefined
 	let buildInProgress = false
 
-	const done = async (event: CdkWatcherEvents['done']): Promise<void> => {
-		latestCdkEvent = event
-		buildInProgress = true
+	const onCdkEvent = async (event: CdkWatcherEvent): Promise<void> => {
+		switch (event.name) {
+			case 'done':
+				latestCdkEvent = event
+				buildInProgress = true
 
-		appEmitter.emit('rebuilding', {})
+				appEmitter.emit('event', {
+					name: 'rebuilding'
+				})
 
-		const apps = await extractAppsFromStacks(event.stacks)
+				const apps = await extractAppsFromStacks(event.stacks)
 
-		appEmitter.emit('done', {
-			apps,
-			errors: event.errors
-		})
-		buildInProgress = false
+				appEmitter.emit('event', {
+					name: 'done',
+					apps,
+					errors: event.errors
+				})
+				buildInProgress = false
+		}
 	}
 
-	cdkEmitter.on('done', done)
+	cdkEmitter.on('event', onCdkEvent)
 	return {
 		appEmitter,
 		close(): void {
-			cdkEmitter.off('done', done)
+			cdkEmitter.off('event', onCdkEvent)
 		},
 		rebuild(): void {
 			if (typeof latestCdkEvent !== 'undefined' && !buildInProgress) {
 				resetDeployedStackDataCache()
-				done(latestCdkEvent)
+				onCdkEvent(latestCdkEvent)
 			}
 		}
 	}

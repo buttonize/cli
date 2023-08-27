@@ -9,23 +9,30 @@ import { buildCdkTree } from './cdk.js'
 import { CdkForkedErrors, CdkForkedStacks } from './types.js'
 import { isVerbose } from './utils.js'
 
-export type CdkWatcherEvents = {
-	error: {
-		message: string
-	}
-	recompiled: {}
-	beforeRecompilation: {}
-	done: {
-		stacks: CdkForkedStacks
-		errors: CdkForkedErrors
-	}
-}
+export type CdkWatcherEvent =
+	| {
+			name: 'error'
+			message: string
+	  }
+	| {
+			name: 'recompiled'
+	  }
+	| {
+			name: 'beforeRecompilation'
+	  }
+	| {
+			name: 'done'
+			stacks: CdkForkedStacks
+			errors: CdkForkedErrors
+	  }
+
+export type CdkWatcherEmitter = Emitter<{ event: CdkWatcherEvent }>
 
 export const createCdkWatcher = async ({
 	tmpDir
 }: {
 	tmpDir: string
-}): Promise<{ cdkEmitter: Emitter<CdkWatcherEvents>; close: () => void }> => {
+}): Promise<{ cdkEmitter: CdkWatcherEmitter; close: () => void }> => {
 	const importedTs = (
 		await import(
 			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
@@ -35,7 +42,7 @@ export const createCdkWatcher = async ({
 	let tsWatcher: ts.WatchOfConfigFile<any> | undefined
 	let fsWatcher: cpx2.Watcher | undefined
 
-	const cdkEmitter = new EventEmitter() as Emitter<CdkWatcherEvents>
+	const cdkEmitter = new EventEmitter() as CdkWatcherEmitter
 
 	const formatHost: ts.FormatDiagnosticsHost = {
 		getCanonicalFileName: (path) => path,
@@ -51,7 +58,8 @@ export const createCdkWatcher = async ({
 		)
 
 		if (!tsConfigPath) {
-			cdkEmitter.emit('error', {
+			cdkEmitter.emit('event', {
+				name: 'error',
 				message: 'tsconfig.json file not found in the project folder'
 			})
 			return
@@ -72,7 +80,8 @@ export const createCdkWatcher = async ({
 					Colors.line(Colors.dim(Colors.bold('TSC Error:'), message))
 				}
 
-				cdkEmitter.emit('error', {
+				cdkEmitter.emit('event', {
+					name: 'error',
 					message
 				})
 			},
@@ -95,7 +104,7 @@ export const createCdkWatcher = async ({
 			host,
 			oldProgram
 		): ts.EmitAndSemanticDiagnosticsBuilderProgram => {
-			cdkEmitter.emit('beforeRecompilation', {})
+			cdkEmitter.emit('event', { name: 'beforeRecompilation' })
 
 			return origCreateProgram(rootNames, options, host, oldProgram)
 		}
@@ -107,11 +116,11 @@ export const createCdkWatcher = async ({
 		host.afterProgramCreate = async (program): Promise<void> => {
 			// Make sure all compiled files are written to filesystem
 			setTimeout(async () => {
-				cdkEmitter.emit('recompiled', {})
+				cdkEmitter.emit('event', { name: 'recompiled' })
 
 				const { stacks, errors } = await buildCdkTree(tmpDir)
 
-				cdkEmitter.emit('done', { stacks, errors })
+				cdkEmitter.emit('event', { name: 'done', stacks, errors })
 			}, 100)
 
 			origPostProgramCreate(program)

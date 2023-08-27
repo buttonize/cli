@@ -1,13 +1,11 @@
-import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import { applyWSSHandler } from '@trpc/server/adapters/ws'
 import EventEmitter from 'events'
 import getPort from 'get-port'
-import { Server } from 'http'
 import { WebSocketServer } from 'ws'
 
-import { AppWatcherEvents } from '../lib/appWatcher.js'
+import { AppWatcherEmitter } from '../lib/appWatcher.js'
+import { CdkWatcherEmitter } from '../lib/cdkWatcher.js'
 import { Emitter } from '../types.js'
-import { httpRouter } from './_http.js'
 import { wsRouter } from './_ws.js'
 
 export type ApiEvents = {
@@ -17,41 +15,35 @@ export type ApiEvents = {
 }
 
 export const createServer = async ({
-	appEmitter
+	appEmitter,
+	cdkEmitter,
+	rebuildApps
 }: {
-	appEmitter: Emitter<AppWatcherEvents>
+	appEmitter: AppWatcherEmitter
+	cdkEmitter: CdkWatcherEmitter
+	rebuildApps: () => void
 }): Promise<{
 	apiEmitter: Emitter<ApiEvents>
-	httpServer: Server
 	wsServer: WebSocketServer
 }> => {
 	const apiEmitter = new EventEmitter() as Emitter<ApiEvents>
 
-	let apps: any
+	let apps: any | undefined = undefined
 
 	const getApps = (): any => {
 		return apps
 	}
 
-	appEmitter.on('done', (event) => {
-		apps = event.apps
-	})
-
-	const httpServer = createHTTPServer({
-		router: httpRouter,
-		createContext() {
-			return {
-				getApps,
-				appEmitter
-			}
+	appEmitter.on('event', (event) => {
+		switch (event.name) {
+			case 'done':
+				apps = event.apps
+				return
 		}
 	})
-	httpServer.listen(
-		await getPort({ port: [3005, 3006, 3008, 3009, 3010, 3011, 3012] })
-	)
 
 	const wss = new WebSocketServer({
-		port: await getPort({ port: [4005, 4006, 4008, 4009, 4010, 4011, 4012] })
+		port: await getPort({ port: [3005, 3006, 3008, 3009, 3010, 3011, 3012] })
 	})
 	applyWSSHandler({
 		wss,
@@ -59,6 +51,8 @@ export const createServer = async ({
 		createContext() {
 			return {
 				getApps,
+				rebuildApps,
+				cdkEmitter,
 				appEmitter
 			}
 		}
@@ -78,7 +72,6 @@ export const createServer = async ({
 
 	return {
 		apiEmitter,
-		httpServer: httpServer.server,
 		wsServer: wss
 	}
 }

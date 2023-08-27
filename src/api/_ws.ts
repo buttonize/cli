@@ -1,21 +1,41 @@
 import { observable } from '@trpc/server/observable'
 
-import { AppWatcherEvents } from '../lib/appWatcher.js'
+import { AppWatcherEvent } from '../lib/appWatcher.js'
+import { CdkWatcherEvent } from '../lib/cdkWatcher.js'
 import { publicProcedure, router } from './trpc.js'
 
 export const wsRouter = router({
-	onGreeting: publicProcedure.subscription(({ ctx }) => {
-		return observable<any>((emit) => {
-			const done = (event: AppWatcherEvents['done']): void => {
-				emit.next(event.apps)
+	rebuild: publicProcedure.mutation(({ ctx }) => {
+		ctx.rebuildApps()
+	}),
+	apps: publicProcedure.query(({ ctx }) => {
+		return ctx.getApps()
+	}),
+	onCdkWatcherEvent: publicProcedure.subscription(({ ctx }) => {
+		return observable<CdkWatcherEvent>((emit) => {
+			const onEvent = (event: CdkWatcherEvent): void => {
+				emit.next(event)
 			}
 
-			ctx.appEmitter.on('done', done)
+			ctx.cdkEmitter.on('event', onEvent)
 
-			emit.next(ctx.getApps())
 			// unsubscribe function when client disconnects or stops subscribing
 			return (): void => {
-				ctx.appEmitter.off('done', done)
+				ctx.cdkEmitter.off('event', onEvent)
+			}
+		})
+	}),
+	onAppWatcherEvent: publicProcedure.subscription(({ ctx }) => {
+		return observable<AppWatcherEvent>((emit) => {
+			const onEvent = (event: AppWatcherEvent): void => {
+				emit.next(event)
+			}
+
+			ctx.appEmitter.on('event', onEvent)
+
+			// unsubscribe function when client disconnects or stops subscribing
+			return (): void => {
+				ctx.appEmitter.off('event', onEvent)
 			}
 		})
 	})

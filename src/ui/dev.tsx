@@ -1,4 +1,3 @@
-import { Server } from 'http'
 import { Box, Newline, Text, useApp, useInput } from 'ink'
 import Spinner from 'ink-spinner'
 import symbols from 'log-symbols'
@@ -7,15 +6,14 @@ import React, { useEffect, useState } from 'react'
 import { WebSocketServer } from 'ws'
 
 import { ApiEvents } from '../api/server.js'
-import { AppWatcherEvents } from '../lib/appWatcher.js'
-import { CdkWatcherEvents } from '../lib/cdkWatcher.js'
+import { AppWatcherEmitter, AppWatcherEvent } from '../lib/appWatcher.js'
+import { CdkWatcherEmitter, CdkWatcherEvent } from '../lib/cdkWatcher.js'
 import { Emitter } from '../types.js'
 
 type DevProps = {
-	cdkEmitter: Emitter<CdkWatcherEvents>
-	appEmitter: Emitter<AppWatcherEvents>
+	cdkEmitter: CdkWatcherEmitter
+	appEmitter: AppWatcherEmitter
 	apiEmitter: Emitter<ApiEvents>
-	httpServer: Server
 	wsServer: WebSocketServer
 	rebuild: () => void
 }
@@ -39,7 +37,6 @@ export const Dev: React.FC<DevProps> = ({
 	apiEmitter,
 	cdkEmitter,
 	appEmitter,
-	httpServer,
 	wsServer,
 	rebuild
 }) => {
@@ -62,55 +59,56 @@ export const Dev: React.FC<DevProps> = ({
 
 	// cdkEmitter
 	useEffect(() => {
-		const beforeRecompilation = (): void => {
-			setCurrentPhase('compilingTs')
-			setErrors(undefined)
+		const onEvent = (event: CdkWatcherEvent): void => {
+			switch (event.name) {
+				case 'beforeRecompilation':
+					setCurrentPhase('compilingTs')
+					setErrors(undefined)
+					return
+				case 'recompiled':
+					setCurrentPhase('buildingCdkTree')
+					return
+				case 'error':
+					setErrors((currentErrors) => {
+						let errs = typeof currentErrors === 'undefined' ? [] : currentErrors
+
+						// Remove duplicates by using Set
+						return [...new Set<string>([...errs, event.message])]
+					})
+			}
 		}
-		const recompiled = (): void => setCurrentPhase('buildingCdkTree')
 
-		const error = (event: CdkWatcherEvents['error']): void => {
-			setErrors((currentErrors) => {
-				let errs = typeof currentErrors === 'undefined' ? [] : currentErrors
-
-				// Remove duplicates by using Set
-				return [...new Set<string>([...errs, event.message])]
-			})
-		}
-
-		cdkEmitter
-			.on('beforeRecompilation', beforeRecompilation)
-			.on('recompiled', recompiled)
-			.on('error', error)
+		cdkEmitter.on('event', onEvent)
 		return () => {
-			cdkEmitter
-				.off('beforeRecompilation', beforeRecompilation)
-				.off('recompiled', recompiled)
-				.on('error', error)
+			cdkEmitter.off('event', onEvent)
 		}
 	}, [])
 
 	// appEmitter
 	useEffect(() => {
-		const done = (event: AppWatcherEvents['done']): void => {
-			setCurrentPhase('built')
+		const onEvent = (event: AppWatcherEvent): void => {
+			switch (event.name) {
+				case 'done':
+					setCurrentPhase('built')
 
-			if (event.errors.length > 0) {
-				setErrors((currentErrors) => {
-					let errs = typeof currentErrors === 'undefined' ? [] : currentErrors
+					if (event.errors.length > 0) {
+						setErrors((currentErrors) => {
+							let errs =
+								typeof currentErrors === 'undefined' ? [] : currentErrors
 
-					// Remove duplicates by using Set
-					return [...new Set<string>([...errs, ...event.errors])]
-				})
+							// Remove duplicates by using Set
+							return [...new Set<string>([...errs, ...event.errors])]
+						})
+					}
+					return
+				case 'rebuilding':
+					setCurrentPhase('buildingApp')
 			}
 		}
 
-		const rebuilding = (): void => {
-			setCurrentPhase('buildingApp')
-		}
-
-		appEmitter.on('done', done).on('rebuilding', rebuilding)
+		appEmitter.on('event', onEvent)
 		return () => {
-			appEmitter.off('done', done).off('rebuilding', rebuilding)
+			appEmitter.off('event', onEvent)
 		}
 	}, [])
 
@@ -126,9 +124,9 @@ export const Dev: React.FC<DevProps> = ({
 		}
 	}, [])
 
-	const debugLink = `http://localhost:3000/v2?hp=${encodeURIComponent(
-		(httpServer.address() as AddressInfo).port
-	)}&wp=${encodeURIComponent((wsServer.address() as AddressInfo).port)}`
+	const debugLink = `http://localhost:3000/v2?port=${encodeURIComponent(
+		(wsServer.address() as AddressInfo).port
+	)}`
 
 	return (
 		<Box flexWrap="wrap">

@@ -7,7 +7,6 @@ export const dev = (program: Program): void => {
 		(yargs) => yargs,
 		async () => {
 			const React = await import('react')
-			const { createHttpTerminator } = await import('http-terminator')
 			const { render } = await import('ink')
 
 			const { linkNodeModulesToTmpDir, prepareTmpFolder } = await import(
@@ -28,11 +27,10 @@ export const dev = (program: Program): void => {
 				cdkEmitter: cdkWatcher.cdkEmitter
 			})
 
-			const { httpServer, wsServer, apiEmitter } = await createServer({
-				appEmitter: appWatcher.appEmitter
-			})
-			const serverTerminator = createHttpTerminator({
-				server: httpServer
+			const { wsServer, apiEmitter } = await createServer({
+				appEmitter: appWatcher.appEmitter,
+				cdkEmitter: cdkWatcher.cdkEmitter,
+				rebuildApps: appWatcher.rebuild
 			})
 
 			const app = render(
@@ -40,7 +38,6 @@ export const dev = (program: Program): void => {
 					apiEmitter={apiEmitter}
 					cdkEmitter={cdkWatcher.cdkEmitter}
 					appEmitter={appWatcher.appEmitter}
-					httpServer={httpServer}
 					wsServer={wsServer}
 					rebuild={appWatcher.rebuild}
 				/>
@@ -53,8 +50,6 @@ export const dev = (program: Program): void => {
 			}).start()
 
 			// Cleanup
-			spinner.text = 'Shutting down tRPC HTTP server'
-			await serverTerminator.terminate()
 			spinner.text = 'Shutting down tRPC WebSocket server'
 			wsServer.close()
 			wsServer.clients.forEach((client) => client.close())

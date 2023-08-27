@@ -77,7 +77,6 @@
 		"chalk": "^5.3.0",
 		"colorette": "^2.0.20",
 		"get-port": "^7.0.0",
-		"http-terminator": "^3.2.0",
 		"ink": "^4.3.1",
 		"ink-link": "^3.0.0",
 		"ink-spinner": "^5.0.0",
