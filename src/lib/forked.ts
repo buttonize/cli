@@ -1,4 +1,4 @@
-import type { App as AppType } from 'aws-cdk-lib'
+import type { App as AppType, Stack as StackType } from 'aws-cdk-lib'
 import type { Template as TemplateType } from 'aws-cdk-lib/assertions'
 import * as path from 'path'
 
@@ -19,11 +19,11 @@ const sendResponse = ({
 }
 
 export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
-	const stacks: { [key: string]: object } = {}
+	const stacks: CdkForkedStacks = {}
 	const errors: string[] = []
 
 	try {
-		const { App } = await import(
+		const { App, Stack } = await import(
 			path.join(tmpDir, 'node_modules', 'aws-cdk-lib', 'index.js')
 		)
 
@@ -37,11 +37,22 @@ export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
 			if (variableValue instanceof App) {
 				try {
 					const app = variableValue as AppType
-					for (const stack of app.node.children) {
+
+					for (const child of app.node.children) {
 						try {
-							stacks[stack.node.id] = (
-								Template.fromStack(app.node.children[0]) as TemplateType
-							).toJSON()
+							if (Stack.isStack(child)) {
+								const stack = child as StackType
+
+								stacks[stack.node.id] = {
+									template: (
+										Template.fromStack(app.node.children[0]) as TemplateType
+									).toJSON(),
+									metadata: {
+										env: stack.environment,
+										stackName: stack.stackName
+									}
+								}
+							}
 						} catch (err) {
 							errors.push(`${err}`)
 						}

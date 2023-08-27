@@ -1,4 +1,14 @@
-export type CdkForkedStacks = { [key: string]: any }
+export type CdkForkedStack = {
+	template: any
+	metadata: {
+		env: string
+		stackName: string
+	}
+}
+
+export type CdkForkedStacks = {
+	[key: string]: CdkForkedStack
+}
 
 export type CdkForkedErrors = string[]
 

@@ -3,18 +3,28 @@ import { hideBin } from 'yargs/helpers'
 
 export const program = yargs(hideBin(process.argv))
 	.scriptName('btnz')
-	.option('stage', {
+	.option('profile', {
 		type: 'string',
-		describe: 'The stage to use, defaults to personal stage'
+		describe: 'AWS profile name to use'
+	})
+	.option('region', {
+		type: 'string',
+		describe: 'AWS region to use'
 	})
 	.option('verbose', {
 		type: 'boolean',
 		describe: 'Print verbose logs'
 	})
-	.group(['stage', 'verbose', 'help'], 'Global:')
+	.group(['region', 'profile', 'verbose', 'help'], 'Global:')
 	.middleware(async (argv) => {
 		if (argv.verbose) {
 			process.env.BTNZ_VERBOSE = '1'
+		}
+		if (typeof argv.profile !== 'undefined' && argv.profile.length > 0) {
+			process.env.AWS_PROFILE = argv.profile
+		}
+		if (typeof argv.region !== 'undefined' && argv.region.length > 0) {
+			process.env.AWS_REGION = argv.region
 		}
 		if (argv._.length > 0) {
 			// const { trackCli } = await import("./telemetry/telemetry.js");
@@ -29,7 +39,7 @@ export const program = yargs(hideBin(process.argv))
 	.fail((_, error, yargs) => {
 		if (!error) {
 			yargs.showHelp()
-			process.exit(1)
+			process.exit(0)
 		}
 		throw error
 	})

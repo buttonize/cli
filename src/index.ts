@@ -10,10 +10,13 @@ import { spinners } from './spinner.js'
 
 dev(program)
 
-if ('setSourceMapsEnabled' in process) {
-	// @ts-expect-error because of some reason
+if (
+	'setSourceMapsEnabled' in process &&
+	typeof process.setSourceMapsEnabled === 'function'
+) {
 	process.setSourceMapsEnabled(true)
 }
+
 process.removeAllListeners('uncaughtException')
 process.on('uncaughtException', (err) => {
 	Logger.debug(err)
@@ -27,14 +30,12 @@ process.on('uncaughtException', (err) => {
 	}
 	console.log()
 	console.log(
-		`Need help with this error? Post it in #help on the Buttonize Discord ${blue(
+		`Need help with this error? Let us know in #help on the Buttonize Discord ${blue(
 			`https://discord.gg/2quY4Vz5BM`
 		)}`
 	)
 	process.exit(1)
 })
-
-process.on('beforeExit', () => {})
 
 // Check Node version
 const nodeVersion = process.versions.node

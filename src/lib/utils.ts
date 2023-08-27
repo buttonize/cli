@@ -17,3 +17,7 @@ export const linkNodeModulesToTmpDir = async (
 		path.join(tmpDir, 'node_modules')
 	)
 }
+
+export const isVerbose = (): boolean => {
+	return process.env.BTNZ_VERBOSE === 'true' || process.env.BTNZ_VERBOSE === '1'
+}

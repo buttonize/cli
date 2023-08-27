@@ -39,7 +39,6 @@
 	"devDependencies": {
 		"@commitlint/cli": "^17.1.2",
 		"@commitlint/config-conventional": "^17.1.0",
-		"@microsoft/eslint-plugin-sdl": "^0.2.0",
 		"@tsconfig/node18": "^18.2.0",
 		"@types/cpx": "^1.5.2",
 		"@types/ink-spinner": "^3.0.1",
@@ -70,14 +69,19 @@
 		"vitest": "^0.34.1"
 	},
 	"dependencies": {
+		"@baselime/paginate-aws": "^1.0.6",
 		"@trpc/server": "^10.37.1",
+		"aws-cdk": "^2.93.0",
+		"aws-sdk": "^2.1445.0",
 		"cfn-resolver-lib": "^1.1.8",
 		"chalk": "^5.3.0",
 		"colorette": "^2.0.20",
+		"get-port": "^7.0.0",
 		"http-terminator": "^3.2.0",
 		"ink": "^4.3.1",
+		"ink-link": "^3.0.0",
 		"ink-spinner": "^5.0.0",
-		"jsonpath-plus": "^7.2.0",
+		"log-symbols": "^5.1.0",
 		"ora": "^7.0.1",
 		"react": "^18.2.0",
 		"ws": "^8.13.0",

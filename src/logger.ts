@@ -1,5 +1,7 @@
 import fs from 'fs/promises'
 
+import { isVerbose } from './lib/utils.js'
+
 let previous = new Date()
 
 const useFile = async () => {
@@ -22,7 +24,7 @@ export const Logger = {
 				return JSON.stringify(x)
 			})
 		]
-		if (process.env.BTNZ_VERBOSE) console.log(...line)
+		if (isVerbose()) console.log(...line)
 
 		useFile().then((file) => {
 			file.write(line.join(' ') + '\n')

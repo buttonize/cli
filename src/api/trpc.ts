@@ -1,12 +1,12 @@
 import { initTRPC } from '@trpc/server'
 
-import { WatcherEvents } from '../lib/watcher.js'
+import { AppWatcherEvents } from '../lib/appWatcher.js'
 import { Emitter } from '../types.js'
 
 // You can use any variable name you like.
 // We use t to keep things simple.
 const t = initTRPC
-	.context<{ getApps: () => any; watcher: Emitter<WatcherEvents> }>()
+	.context<{ getApps: () => any; appEmitter: Emitter<AppWatcherEvents> }>()
 	.create()
 
 export const router = t.router

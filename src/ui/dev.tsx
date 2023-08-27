@@ -1,31 +1,53 @@
-import { Box, Text, useApp, useInput } from 'ink'
+import { Server } from 'http'
+import { Box, Newline, Text, useApp, useInput } from 'ink'
 import Spinner from 'ink-spinner'
+import symbols from 'log-symbols'
+import { AddressInfo } from 'net'
 import React, { useEffect, useState } from 'react'
+import { WebSocketServer } from 'ws'
 
-import { extractAppsFromStacks } from '../lib/cdk.js'
-import { CdkForkedErrors } from '../lib/types.js'
-import { WatcherEvents } from '../lib/watcher.js'
+import { ApiEvents } from '../api/server.js'
+import { AppWatcherEvents } from '../lib/appWatcher.js'
+import { CdkWatcherEvents } from '../lib/cdkWatcher.js'
 import { Emitter } from '../types.js'
-import { InverseBoxText } from './InverseBoxText.js'
-import { formatTsErrorMessage } from './utils.js'
 
 type DevProps = {
-	tmpDir: string
-	watcher: Emitter<WatcherEvents>
+	cdkEmitter: Emitter<CdkWatcherEvents>
+	appEmitter: Emitter<AppWatcherEvents>
+	apiEmitter: Emitter<ApiEvents>
+	httpServer: Server
+	wsServer: WebSocketServer
+	rebuild: () => void
 }
 
-export const Dev: React.FC<DevProps> = ({ tmpDir, watcher }) => {
-	const [status, setStatus] = useState<
-		'init' | 'compilingTs' | 'buildingCdkTree' | 'built'
-	>('init')
+type ProgramPhases =
+	| 'init'
+	| 'compilingTs'
+	| 'buildingCdkTree'
+	| 'buildingApp'
+	| 'built'
 
-	const [output, setOutput] = useState<
-		{ apps: any; errors: CdkForkedErrors } | undefined
-	>()
+const phasesTranslations: Record<ProgramPhases, string> = {
+	buildingCdkTree: 'Executing CDK code...',
+	built: 'App built',
+	compilingTs: 'Compiling TypeScript source files...',
+	buildingApp: 'Extracting Apps from CDK and fetching resources from AWS...',
+	init: 'Initializing...'
+}
 
-	const [tsError, setTsError] = useState<string | undefined>()
+export const Dev: React.FC<DevProps> = ({
+	apiEmitter,
+	cdkEmitter,
+	appEmitter,
+	httpServer,
+	wsServer,
+	rebuild
+}) => {
+	const [currentPhase, setCurrentPhase] = useState<ProgramPhases>('init')
 
-	const [generalError, setGeneralError] = useState<string | undefined>()
+	const [errors, setErrors] = useState<string[] | undefined>()
+
+	const [apiConnections, setApiConnections] = useState<number>(0)
 
 	const { exit } = useApp()
 
@@ -33,127 +55,123 @@ export const Dev: React.FC<DevProps> = ({ tmpDir, watcher }) => {
 		if (key.escape || input === 'q') {
 			exit()
 		}
+		if (key.return) {
+			rebuild()
+		}
 	})
 
+	// cdkEmitter
 	useEffect(() => {
 		const beforeRecompilation = (): void => {
-			setStatus('compilingTs')
-			setTsError(undefined)
+			setCurrentPhase('compilingTs')
+			setErrors(undefined)
 		}
-		const recompiled = (): void => setStatus('buildingCdkTree')
-		const builtCdkStacks = (event: WatcherEvents['builtCdkStacks']): void => {
-			setStatus('built')
+		const recompiled = (): void => setCurrentPhase('buildingCdkTree')
 
-			setOutput({
-				apps: extractAppsFromStacks(event.stacks),
-				errors: event.errors
+		const error = (event: CdkWatcherEvents['error']): void => {
+			setErrors((currentErrors) => {
+				let errs = typeof currentErrors === 'undefined' ? [] : currentErrors
+
+				// Remove duplicates by using Set
+				return [...new Set<string>([...errs, event.message])]
 			})
 		}
-		const tsError = async (event: WatcherEvents['tsError']): Promise<void> =>
-			setTsError(await formatTsErrorMessage(tmpDir, event.diagnostic))
-		const tsConfigError = (): void =>
-			setGeneralError('tsconfig.json not found.')
 
-		watcher
+		cdkEmitter
 			.on('beforeRecompilation', beforeRecompilation)
 			.on('recompiled', recompiled)
-			.on('builtCdkStacks', builtCdkStacks)
-			.on('tsError', tsError)
-			.on('tsConfigError', tsConfigError)
-
+			.on('error', error)
 		return () => {
-			watcher
+			cdkEmitter
 				.off('beforeRecompilation', beforeRecompilation)
 				.off('recompiled', recompiled)
-				.off('builtCdkStacks', builtCdkStacks)
-				.off('tsError', tsError)
-				.off('tsConfigError', tsConfigError)
+				.on('error', error)
 		}
 	}, [])
 
-	if (typeof tsError !== 'undefined') {
-		return (
-			<Box flexWrap="wrap">
-				<Box borderStyle="single" paddingX={10}>
-					<Text color="red" bold>
-						TypeScript compilation error:
-					</Text>
-				</Box>
-				<Box width="100%">
-					<InverseBoxText>{tsError}</InverseBoxText>
-				</Box>
-			</Box>
-		)
-	}
+	// appEmitter
+	useEffect(() => {
+		const done = (event: AppWatcherEvents['done']): void => {
+			setCurrentPhase('built')
 
-	if (typeof generalError !== 'undefined') {
-		return (
-			<Box flexWrap="wrap">
-				<Box borderStyle="single" paddingX={10}>
-					<Text color="red" bold>
-						Error:
-					</Text>
-				</Box>
-				<Box width="100%">
-					<InverseBoxText>{`${generalError}: ${generalError}`}</InverseBoxText>
-				</Box>
-			</Box>
-		)
-	}
+			if (event.errors.length > 0) {
+				setErrors((currentErrors) => {
+					let errs = typeof currentErrors === 'undefined' ? [] : currentErrors
 
-	switch (status) {
-		case 'init':
-			return (
-				<Box>
-					<Spinner type="dots" />
-					<Text> Initializing Buttonize CLI...</Text>
-				</Box>
-			)
-		case 'compilingTs':
-			return (
-				<Box>
-					<Spinner type="dots" />
-					<Text> Building your CDK code...</Text>
-				</Box>
-			)
-		case 'buildingCdkTree':
-			return (
-				<Box>
-					<Spinner type="dots" />
-					<Text> Extracting Buttonize constructs CDK...</Text>
-				</Box>
-			)
-		case 'built':
-			if (typeof output !== 'undefined' && output?.errors.length > 0) {
-				return (
-					<Box flexWrap="wrap">
-						<Box borderStyle="single" paddingX={10}>
-							<Text color="red" bold>
-								CDK Build error:
-							</Text>
-						</Box>
-						{output.errors.map((err, i) => (
-							<Box width="100%" key={i} paddingBottom={1}>
-								<InverseBoxText>{err}</InverseBoxText>
-							</Box>
-						))}
-					</Box>
-				)
+					// Remove duplicates by using Set
+					return [...new Set<string>([...errs, ...event.errors])]
+				})
 			}
-			return (
-				<Box flexWrap="wrap">
-					<Box borderStyle="single" paddingX={10}>
-						<Text color="green" bold>
-							CDK Built, yay!
+		}
+
+		const rebuilding = (): void => {
+			setCurrentPhase('buildingApp')
+		}
+
+		appEmitter.on('done', done).on('rebuilding', rebuilding)
+		return () => {
+			appEmitter.off('done', done).off('rebuilding', rebuilding)
+		}
+	}, [])
+
+	// apiEmitter
+	useEffect(() => {
+		const connectionChange = (event: ApiEvents['connectionChange']): void => {
+			setApiConnections(event.connectionsCount)
+		}
+
+		apiEmitter.on('connectionChange', connectionChange)
+		return () => {
+			apiEmitter.off('connectionChange', connectionChange)
+		}
+	}, [])
+
+	const debugLink = `http://localhost:3000/v2?hp=${encodeURIComponent(
+		(httpServer.address() as AddressInfo).port
+	)}&wp=${encodeURIComponent((wsServer.address() as AddressInfo).port)}`
+
+	return (
+		<Box flexWrap="wrap">
+			<Box width="100%">
+				{typeof errors !== 'undefined' && errors.length > 0 ? (
+					<Text>
+						<Text>{symbols.error} Error occurred</Text>
+						<Newline />
+						<Newline />
+						<Text dimColor>
+							{errors?.map((error, i) => (
+								<Text key={i}>
+									{error}
+									<Newline />
+								</Text>
+							)) ?? null}
 						</Text>
+					</Text>
+				) : (
+					<Box width="100%">
+						{currentPhase === 'built' ? (
+							<Text>{symbols.success}</Text>
+						) : (
+							<Spinner type="dots" />
+						)}
+						<Text>{` ${phasesTranslations[currentPhase]}`}</Text>
 					</Box>
-					<Box borderStyle="single" width="100%">
-						<Text>
-							To start live development go to:{' '}
-							<Text color={'blueBright'}>http://localhost:3000/v2</Text>
-						</Text>
-					</Box>
-				</Box>
-			)
-	}
+				)}
+			</Box>
+
+			<Box width="100%" paddingTop={1}>
+				<Text>
+					{apiConnections === 0 ? symbols.info : symbols.success} Debug your app
+					live here: <Text color={'blueBright'}>{debugLink}</Text>
+				</Text>
+			</Box>
+			<Box paddingTop={1} width="100%">
+				<Text dimColor>
+					<Text>Press &quot;q&quot; to quit</Text>
+					<Newline />
+					<Text>Press &quot;enter&quot; to rebuild</Text>
+				</Text>
+			</Box>
+		</Box>
+	)
 }

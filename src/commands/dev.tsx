@@ -1,5 +1,4 @@
 import type { Program } from '../program.js'
-import { createSpinner } from '../spinner.js'
 
 export const dev = (program: Program): void => {
 	program.command(
@@ -16,19 +15,36 @@ export const dev = (program: Program): void => {
 			)
 			const { Dev } = await import('../ui/dev.js')
 			const { createServer } = await import('../api/server.js')
-			const { createWatcher } = await import('../lib/watcher.js')
+			const { createCdkWatcher } = await import('../lib/cdkWatcher.js')
+			const { createSpinner } = await import('../spinner.js')
+			const { createAppWatcher } = await import('../lib/appWatcher.js')
 
 			const tmpDir = await prepareTmpFolder()
 			await linkNodeModulesToTmpDir(tmpDir)
 
-			const watcher = await createWatcher({ tmpDir })
+			const cdkWatcher = await createCdkWatcher({ tmpDir })
 
-			const { httpServer, wsServer } = createServer(watcher.emitter)
+			const appWatcher = await createAppWatcher({
+				cdkEmitter: cdkWatcher.cdkEmitter
+			})
+
+			const { httpServer, wsServer, apiEmitter } = await createServer({
+				appEmitter: appWatcher.appEmitter
+			})
 			const serverTerminator = createHttpTerminator({
 				server: httpServer
 			})
 
-			const app = render(<Dev tmpDir={tmpDir} watcher={watcher.emitter} />)
+			const app = render(
+				<Dev
+					apiEmitter={apiEmitter}
+					cdkEmitter={cdkWatcher.cdkEmitter}
+					appEmitter={appWatcher.appEmitter}
+					httpServer={httpServer}
+					wsServer={wsServer}
+					rebuild={appWatcher.rebuild}
+				/>
+			)
 			await app.waitUntilExit()
 			app.clear()
 
@@ -42,9 +58,10 @@ export const dev = (program: Program): void => {
 			spinner.text = 'Shutting down tRPC WebSocket server'
 			wsServer.close()
 			wsServer.clients.forEach((client) => client.close())
-			await new Promise((r) => setTimeout(r, 1000))
 			spinner.text = 'Shutting down file watcher'
-			watcher.close()
+			cdkWatcher.close()
+			spinner.text = 'Shutting down app watcher'
+			appWatcher.close()
 
 			spinner.stop()
 

@@ -5,38 +5,27 @@ import type * as ts from 'typescript'
 
 import { Colors } from '../colors.js'
 import { Emitter } from '../types.js'
-import { buildCdkTree, extractAppsFromStacks } from './cdk.js'
+import { buildCdkTree } from './cdk.js'
 import { CdkForkedErrors, CdkForkedStacks } from './types.js'
+import { isVerbose } from './utils.js'
 
-export type WatcherEvents = {
-	tsConfigError: {}
-	tsError: {
-		diagnostic: ts.Diagnostic
-	}
-	watchStatusChange: {
-		diagnostic: ts.Diagnostic
-		newLine: string
-		options: ts.CompilerOptions
-		errorCount?: number
+export type CdkWatcherEvents = {
+	error: {
+		message: string
 	}
 	recompiled: {}
 	beforeRecompilation: {}
-	builtCdkStacks: {
+	done: {
 		stacks: CdkForkedStacks
 		errors: CdkForkedErrors
 	}
-	builtApps: {
-		apps: {
-			[stackId: string]: { [appId: string]: any }
-		}
-	}
 }
 
-export const createWatcher = async ({
+export const createCdkWatcher = async ({
 	tmpDir
 }: {
 	tmpDir: string
-}): Promise<{ emitter: Emitter<WatcherEvents>; close: () => void }> => {
+}): Promise<{ cdkEmitter: Emitter<CdkWatcherEvents>; close: () => void }> => {
 	const importedTs = (
 		await import(
 			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
@@ -46,12 +35,12 @@ export const createWatcher = async ({
 	let tsWatcher: ts.WatchOfConfigFile<any> | undefined
 	let fsWatcher: cpx2.Watcher | undefined
 
-	const emitter = new EventEmitter() as Emitter<WatcherEvents>
+	const cdkEmitter = new EventEmitter() as Emitter<CdkWatcherEvents>
 
 	const formatHost: ts.FormatDiagnosticsHost = {
 		getCanonicalFileName: (path) => path,
 		getCurrentDirectory: () => tmpDir,
-		getNewLine: () => importedTs.sys.newLine
+		getNewLine: () => ''
 	}
 
 	const watchTs = (): void => {
@@ -62,7 +51,9 @@ export const createWatcher = async ({
 		)
 
 		if (!tsConfigPath) {
-			emitter.emit('tsConfigError', {})
+			cdkEmitter.emit('error', {
+				message: 'tsconfig.json file not found in the project folder'
+			})
 			return
 		}
 
@@ -76,27 +67,17 @@ export const createWatcher = async ({
 			importedTs.sys,
 			importedTs.createEmitAndSemanticDiagnosticsBuilderProgram,
 			(diagnostic) => {
-				if (process.env.BTNZ_VERBOSE) {
-					Colors.line(
-						Colors.dim(
-							Colors.bold('TSC Error:'),
-							`${diagnostic.code}:${importedTs.flattenDiagnosticMessageText(
-								diagnostic.messageText,
-								formatHost.getNewLine()
-							)}`
-						)
-					)
+				const message = importedTs.formatDiagnostic(diagnostic, formatHost)
+				if (isVerbose()) {
+					Colors.line(Colors.dim(Colors.bold('TSC Error:'), message))
 				}
 
-				emitter.emit('tsError', { diagnostic })
+				cdkEmitter.emit('error', {
+					message
+				})
 			},
-			(
-				diagnostic: ts.Diagnostic,
-				newLine: string,
-				options: ts.CompilerOptions,
-				errorCount?: number
-			) => {
-				if (process.env.BTNZ_VERBOSE) {
+			(diagnostic: ts.Diagnostic) => {
+				if (isVerbose()) {
 					Colors.line(
 						Colors.dim(
 							Colors.bold('TSC Info:'),
@@ -104,13 +85,6 @@ export const createWatcher = async ({
 						)
 					)
 				}
-
-				emitter.emit('watchStatusChange', {
-					diagnostic,
-					newLine,
-					options,
-					errorCount
-				})
 			}
 		)
 
@@ -121,7 +95,7 @@ export const createWatcher = async ({
 			host,
 			oldProgram
 		): ts.EmitAndSemanticDiagnosticsBuilderProgram => {
-			emitter.emit('beforeRecompilation', {})
+			cdkEmitter.emit('beforeRecompilation', {})
 
 			return origCreateProgram(rootNames, options, host, oldProgram)
 		}
@@ -131,18 +105,13 @@ export const createWatcher = async ({
 			undefined
 		>
 		host.afterProgramCreate = async (program): Promise<void> => {
+			// Make sure all compiled files are written to filesystem
 			setTimeout(async () => {
-				emitter.emit('recompiled', {})
+				cdkEmitter.emit('recompiled', {})
 
 				const { stacks, errors } = await buildCdkTree(tmpDir)
 
-				emitter.emit('builtCdkStacks', { stacks, errors })
-
-				const apps = extractAppsFromStacks(stacks)
-
-				emitter.emit('builtApps', {
-					apps
-				})
+				cdkEmitter.emit('done', { stacks, errors })
 			}, 100)
 
 			origPostProgramCreate(program)
@@ -157,7 +126,7 @@ export const createWatcher = async ({
 	fsWatcher.on('watch-ready', () => watchTs())
 
 	return {
-		emitter,
+		cdkEmitter,
 		close(): void {
 			tsWatcher?.close()
 			fsWatcher?.close()

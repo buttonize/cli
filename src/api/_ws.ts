@@ -1,21 +1,21 @@
 import { observable } from '@trpc/server/observable'
 
-import { WatcherEvents } from '../lib/watcher.js'
+import { AppWatcherEvents } from '../lib/appWatcher.js'
 import { publicProcedure, router } from './trpc.js'
 
 export const wsRouter = router({
 	onGreeting: publicProcedure.subscription(({ ctx }) => {
 		return observable<any>((emit) => {
-			const builtApps = (event: WatcherEvents['builtApps']) => {
+			const done = (event: AppWatcherEvents['done']): void => {
 				emit.next(event.apps)
 			}
 
-			ctx.watcher.on('builtApps', builtApps)
+			ctx.appEmitter.on('done', done)
 
 			emit.next(ctx.getApps())
 			// unsubscribe function when client disconnects or stops subscribing
-			return () => {
-				ctx.watcher.off('builtApps', builtApps)
+			return (): void => {
+				ctx.appEmitter.off('done', done)
 			}
 		})
 	})
