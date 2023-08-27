@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws'
 
 import { AppWatcherEmitter } from '../lib/appWatcher.js'
 import { CdkWatcherEmitter } from '../lib/cdkWatcher.js'
+import { Apps } from '../lib/types.js'
 import { Emitter } from '../types.js'
 import { wsRouter } from './_ws.js'
 
@@ -28,9 +29,9 @@ export const createServer = async ({
 }> => {
 	const apiEmitter = new EventEmitter() as Emitter<ApiEvents>
 
-	let apps: any | undefined = undefined
+	let apps: Apps | undefined = undefined
 
-	const getApps = (): any => {
+	const getApps = (): Apps | undefined => {
 		return apps
 	}
 

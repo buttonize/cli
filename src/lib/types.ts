@@ -1,5 +1,9 @@
+export type Apps = {
+	[stackName: string]: { [appName: string]: SerializedComponent[] }
+}
+
 export type CdkForkedStack = {
-	template: any
+	template: Apps
 	metadata: {
 		env: string
 		stackName: string
@@ -19,4 +23,10 @@ export type CdkForkedInput = {
 export type CdkForkedOutput = {
 	stacks: CdkForkedStacks
 	errors: CdkForkedErrors
+}
+
+export interface SerializedComponent {
+	props?: any
+	typeName: string
+	children?: SerializedComponent[]
 }

@@ -7,13 +7,18 @@ import { EventEmitter } from 'events'
 import { Emitter } from '../types.js'
 import { CdkWatcherEmitter, CdkWatcherEvent } from './cdkWatcher.js'
 import { getSdk } from './sdk.js'
-import { CdkForkedErrors, CdkForkedStack, CdkForkedStacks } from './types.js'
+import {
+	Apps,
+	CdkForkedErrors,
+	CdkForkedStack,
+	CdkForkedStacks
+} from './types.js'
 
 export type AppWatcherEvent =
 	| { name: 'rebuilding' }
 	| {
 			name: 'done'
-			apps: object
+			apps: Apps
 			errors: CdkForkedErrors
 	  }
 
