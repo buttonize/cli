@@ -20,7 +20,7 @@
 	"scripts": {
 		"prepare": "husky install",
 		"watch": "tsc -w",
-		"build": "tsc",
+		"build": "tsc && tsup src/api/_ws.ts --dts-only",
 		"lint": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json",
 		"lint:fix": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json --fix",
 		"test": "vitest run",
@@ -70,7 +70,7 @@
 	},
 	"dependencies": {
 		"@baselime/paginate-aws": "^1.0.6",
-		"@trpc/server": "^10.37.1",
+		"@trpc/server": "10.38.1",
 		"aws-cdk": "^2.93.0",
 		"aws-sdk": "^2.1445.0",
 		"cfn-resolver-lib": "^1.1.8",
