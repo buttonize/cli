@@ -1,5 +1,19 @@
 export type Apps = {
-	[stackName: string]: { [appName: string]: SerializedComponent[] }
+	[stackId: string]: {
+		[appId: string]: {
+			label: string
+			executionRoleArn?: string
+			executionRoleExternalId?: string
+			pages: {
+				[pageId: string]: {
+					label: string
+					docs?: string
+					body: SerializedComponent[]
+				}
+			}
+			docs?: string
+		}
+	}
 }
 
 export type CdkForkedStack = {

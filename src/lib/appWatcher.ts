@@ -144,12 +144,8 @@ export const tryToFetchDeployedStack = async (
 
 export const extractAppsFromStacks = async (
 	stacks: CdkForkedStacks
-): Promise<{
-	[stackId: string]: { [appId: string]: any }
-}> => {
-	const acc: {
-		[stackId: string]: { [appId: string]: any }
-	} = {}
+): Promise<Apps> => {
+	const acc: Apps = {}
 
 	for (const [stackId, stackData] of Object.entries(stacks)) {
 		acc[stackId] = {}
@@ -186,7 +182,31 @@ export const extractAppsFromStacks = async (
 		)
 
 		for (const [rawAppId, rawAppTemplate] of rawApps) {
-			acc[stackId][rawAppId] = JSON.parse(rawAppTemplate.Properties.Props).app
+			const rawAppPages = Object.entries<any>(
+				resolvedTemplate.Resources
+			).filter(
+				([, { Type, Properties }]) =>
+					Type === 'Custom::ButtonizeAppPage' &&
+					Properties.AppId[0] === rawAppId
+			)
+
+			acc[stackId][rawAppTemplate.Properties.AppIdName] = {
+				docs: rawAppTemplate.Properties.Docs,
+				executionRoleArn: undefined, // TODO
+				executionRoleExternalId: undefined, // TODO
+				label: rawAppTemplate.Properties.Label,
+				pages: rawAppPages.reduce<Apps[string][string]['pages']>(
+					(acc, [, rawPageTemplate]) => ({
+						...acc,
+						[rawPageTemplate.Properties.PageIdName]: {
+							body: JSON.parse(rawPageTemplate.Properties.Body),
+							label: rawPageTemplate.Properties.Label,
+							docs: rawPageTemplate.Properties.Docs
+						}
+					}),
+					{}
+				)
+			}
 		}
 	}
 
