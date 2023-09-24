@@ -1,0 +1,4 @@
+{
+	"extends": "./tsconfig.json",
+	"include": ["src", "cpx2.d.ts", "cfn-resolver-lib.d.ts"]
+}

@@ -1,28 +1,32 @@
 {
 	"name": "@buttonize/cli",
 	"type": "module",
-	"version": "1.0.0",
+	"version": "0.0.0",
+	"license": "MIT",
+	"description": "CLI for working with Buttonize",
 	"author": {
 		"name": "Buttonize",
 		"url": "https://buttonize.io",
 		"organization": "Buttonize"
 	},
 	"bin": {
-		"buttonize": "dist/index.js",
-		"btnz": "dist/index.js"
+		"buttonize": "lib/index.js",
+		"btnz": "lib/index.js"
 	},
-	"license": "MIT",
-	"description": "CLI for working with Buttonize",
-	"main": "index.js",
+	"publishConfig": {
+		"access": "public"
+	},
+	"main": "lib/index.js",
+	"types": "lib/index.d.ts",
 	"engines": {
-		"node": ">= 14.18.0"
+		"node": ">= 18.16.0"
 	},
 	"scripts": {
 		"prepare": "husky install",
-		"watch": "tsc -w",
-		"build": "tsc && tsup src/api/_ws.ts --dts-only",
-		"lint": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json",
-		"lint:fix": "eslint 'src' --quiet --ext .ts,.tsx,.js,.jsx,.json --fix",
+		"watch": "tsc --project tsconfig.release.json -w",
+		"build": "tsc --project tsconfig.release.json && tsup src/api/_ws.ts -d lib --tsconfig=tsconfig.release.json --dts-only",
+		"lint": "eslint 'src' 'test' --quiet --ext .ts,.tsx",
+		"lint:fix": "pnpm run lint --fix",
 		"test": "vitest run",
 		"tdd": "vitest --watch"
 	},
@@ -66,7 +70,8 @@
 		"ts-node": "^10.9.1",
 		"tsup": "^7.2.0",
 		"typescript": "^5.1.6",
-		"vitest": "^0.34.1"
+		"vitest": "^0.34.1",
+		"semantic-release": "^21.1.1"
 	},
 	"dependencies": {
 		"@baselime/paginate-aws": "^1.0.6",
