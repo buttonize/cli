@@ -1,13 +1,28 @@
 {
 	"extends": "@tsconfig/node18/tsconfig.json",
 	"compilerOptions": {
-		"declaration": true,
 		"module": "NodeNext",
 		"target": "esnext",
 		"moduleResolution": "nodenext",
 		"outDir": "./lib",
 		"allowSyntheticDefaultImports": true,
-		"jsx": "react"
+		"jsx": "react",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"alwaysStrict": true,
+		"noEmitOnError": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"stripInternal": false
 	},
 	"include": ["src", "test", "cpx2.d.ts", "cfn-resolver-lib.d.ts"],
 	"exclude": []
