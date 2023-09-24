@@ -201,7 +201,8 @@ export const extractAppsFromStacks = async (
 						[rawPageTemplate.Properties.PageIdName]: {
 							body: JSON.parse(rawPageTemplate.Properties.Body),
 							label: rawPageTemplate.Properties.Label,
-							docs: rawPageTemplate.Properties.Docs
+							docs: rawPageTemplate.Properties.Docs,
+							isFirstPage: rawPageTemplate.Properties.IsFirstPage === 'true'
 						}
 					}),
 					{}

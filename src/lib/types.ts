@@ -8,6 +8,7 @@ export type Apps = {
 				[pageId: string]: {
 					label: string
 					docs?: string
+					isFirstPage: boolean
 					body: SerializedComponent[]
 				}
 			}
