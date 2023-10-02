@@ -4,6 +4,7 @@ import type { CloudFormation } from 'aws-sdk'
 import NodeEvaluator, { NodeEvaluatorOptions } from 'cfn-resolver-lib'
 import { EventEmitter } from 'events'
 
+import { Logger } from '../logger.js'
 import { Emitter } from '../types.js'
 import { CdkWatcherEmitter, CdkWatcherEvent } from './cdkWatcher.js'
 import { getSdk } from './sdk.js'
@@ -91,9 +92,9 @@ export const createAppWatcher = async ({
 export const tryToFetchDeployedStack = async (
 	stack: CdkForkedStack
 ): Promise<{
-	evaluatorOptions: NodeEvaluatorOptions
-	region: string
-	account: Account
+	evaluatorOptions: NodeEvaluatorOptions | null
+	region: string | null
+	account: Account | null
 }> => {
 	const evaluatorOptions = {
 		RefResolvers: {} as Exclude<
@@ -105,40 +106,64 @@ export const tryToFetchDeployedStack = async (
 			undefined
 		>
 	}
+	try {
+		const { sdk } = await getSdk(stack)
 
-	const { sdk } = await getSdk(stack)
+		const cfn = sdk.cloudFormation() as CloudFormation
 
-	const cfn = sdk.cloudFormation() as CloudFormation
+		// For now only resolve Lambda Functions. Should be sufficient.
+		for await (const stacks of paginate(
+			(next) =>
+				cfn
+					.listStackResources({
+						StackName: stack.metadata.stackName,
+						NextToken: next
+					})
+					.promise(),
+			'NextToken'
+		)) {
+			for (const {
+				LogicalResourceId,
+				PhysicalResourceId,
+				ResourceType
+			} of stacks.StackResourceSummaries ?? []) {
+				const account = await sdk.currentAccount()
 
-	// For now only resolve Lambda Functions. Should be sufficient.
-	for await (const stacks of paginate(
-		(next) =>
-			cfn
-				.listStackResources({
-					StackName: stack.metadata.stackName,
-					NextToken: next
-				})
-				.promise(),
-		'NextToken'
-	)) {
-		const onlyLambdas = stacks.StackResourceSummaries?.filter(
-			({ ResourceType }) => ResourceType === 'AWS::Lambda::Function'
-		)
-
-		for (const { LogicalResourceId, PhysicalResourceId } of onlyLambdas ?? []) {
-			const account = await sdk.currentAccount()
-
-			evaluatorOptions.RefResolvers[LogicalResourceId] = `${PhysicalResourceId}`
-			evaluatorOptions['Fn::GetAttResolvers'][LogicalResourceId] = {
-				Arn: `arn:${account.partition}:lambda:${sdk.currentRegion}:${account.accountId}:function:${PhysicalResourceId}`
+				switch (ResourceType) {
+					case 'AWS::Lambda::Function':
+						evaluatorOptions.RefResolvers[
+							LogicalResourceId
+						] = `${PhysicalResourceId}`
+						evaluatorOptions['Fn::GetAttResolvers'][LogicalResourceId] = {
+							Arn: `arn:${account.partition}:lambda:${sdk.currentRegion}:${account.accountId}:function:${PhysicalResourceId}`
+						}
+						break
+					case 'AWS::IAM::Role':
+						evaluatorOptions.RefResolvers[
+							LogicalResourceId
+						] = `${PhysicalResourceId}`
+						evaluatorOptions['Fn::GetAttResolvers'][LogicalResourceId] = {
+							Arn: `arn:${account.partition}:iam::${account.accountId}:role/${PhysicalResourceId}`
+						}
+				}
 			}
 		}
-	}
 
-	return {
-		evaluatorOptions,
-		region: sdk.currentRegion,
-		account: await sdk.currentAccount()
+		return {
+			evaluatorOptions,
+			region: sdk.currentRegion,
+			account: await sdk.currentAccount()
+		}
+	} catch (error) {
+		Logger.debug(
+			'Error when fetching CloduFormation Stack data from AWS',
+			error
+		)
+		return {
+			account: null,
+			evaluatorOptions: null,
+			region: null
+		}
 	}
 }
 
@@ -164,14 +189,24 @@ export const extractAppsFromStacks = async (
 
 		const resolvedTemplate = new NodeEvaluator(stackData.template, {
 			RefResolvers: {
-				...deployedStackData.evaluatorOptions.RefResolvers,
-				'AWS::Region': deployedStackData.region,
-				'AWS::Partition': deployedStackData.account.partition,
-				'AWS::AccountId': deployedStackData.account.accountId
+				...(deployedStackData.evaluatorOptions !== null
+					? deployedStackData.evaluatorOptions.RefResolvers
+					: {}),
+				'AWS::Region': deployedStackData.region ?? '',
+				'AWS::Partition':
+					deployedStackData.account !== null
+						? deployedStackData.account.partition
+						: '',
+				'AWS::AccountId':
+					deployedStackData.account !== null
+						? deployedStackData.account.accountId
+						: ''
 				// 'AWS::StackId': 'MyEvaluatedFakeStackUsEast1'
 			},
 			'Fn::GetAttResolvers':
-				deployedStackData.evaluatorOptions['Fn::GetAttResolvers']
+				deployedStackData.evaluatorOptions !== null
+					? deployedStackData.evaluatorOptions['Fn::GetAttResolvers']
+					: {}
 		}).evaluateNodes()
 
 		// Revert console.warn
@@ -192,8 +227,9 @@ export const extractAppsFromStacks = async (
 
 			acc[stackId][rawAppTemplate.Properties.AppIdName] = {
 				docs: rawAppTemplate.Properties.Docs,
-				executionRoleArn: undefined, // TODO
-				executionRoleExternalId: undefined, // TODO
+				executionRoleArn: rawAppTemplate.Properties.ExecutionRoleArn,
+				executionRoleExternalId:
+					rawAppTemplate.Properties.ExecutionRoleExternalId,
 				label: rawAppTemplate.Properties.Label,
 				pages: rawAppPages.reduce<Apps[string][string]['pages']>(
 					(acc, [, rawPageTemplate]) => ({
