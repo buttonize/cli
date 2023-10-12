@@ -9,10 +9,10 @@ export const prepareTmpFolder = async (): Promise<string> => {
 export const linkNodeModulesToTmpDir = async (
 	tmpDir: string
 ): Promise<void> => {
-	const fs = await import('fs/promises')
 	const path = await import('path')
+	const symlinkOrCopy = (await import('symlink-or-copy')).sync
 
-	await fs.symlink(
+	symlinkOrCopy(
 		path.join(process.cwd(), 'node_modules'),
 		path.join(tmpDir, 'node_modules')
 	)

@@ -4,137 +4,141 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-importers:
+dependencies:
+  '@baselime/paginate-aws':
+    specifier: ^1.0.6
+    version: 1.0.6
+  '@trpc/server':
+    specifier: 10.38.1
+    version: 10.38.1
+  cfn-resolver-lib:
+    specifier: ^1.1.8
+    version: 1.1.8
+  chalk:
+    specifier: ^5.3.0
+    version: 5.3.0
+  colorette:
+    specifier: ^2.0.20
+    version: 2.0.20
+  cpx2:
+    specifier: ^5.0.0
+    version: 5.0.0
+  get-port:
+    specifier: ^7.0.0
+    version: 7.0.0
+  ink:
+    specifier: ^4.3.1
+    version: 4.3.1(@types/react@18.2.19)(react@18.2.0)
+  ink-link:
+    specifier: ^3.0.0
+    version: 3.0.0(ink@4.3.1)
+  ink-spinner:
+    specifier: ^5.0.0
+    version: 5.0.0(ink@4.3.1)(react@18.2.0)
+  log-symbols:
+    specifier: ^5.1.0
+    version: 5.1.0
+  ora:
+    specifier: ^7.0.1
+    version: 7.0.1
+  react:
+    specifier: ^18.2.0
+    version: 18.2.0
+  symlink-or-copy:
+    specifier: ^1.3.1
+    version: 1.3.1
+  ws:
+    specifier: ^8.13.0
+    version: 8.13.0
+  yargs:
+    specifier: ^17.7.2
+    version: 17.7.2
 
-  .:
-    dependencies:
-      '@baselime/paginate-aws':
-        specifier: ^1.0.6
-        version: 1.0.6
-      '@trpc/server':
-        specifier: 10.38.1
-        version: 10.38.1
-      cfn-resolver-lib:
-        specifier: ^1.1.8
-        version: 1.1.8
-      chalk:
-        specifier: ^5.3.0
-        version: 5.3.0
-      colorette:
-        specifier: ^2.0.20
-        version: 2.0.20
-      cpx2:
-        specifier: ^5.0.0
-        version: 5.0.0
-      get-port:
-        specifier: ^7.0.0
-        version: 7.0.0
-      ink:
-        specifier: ^4.3.1
-        version: 4.3.1(@types/react@18.2.19)(react@18.2.0)
-      ink-link:
-        specifier: ^3.0.0
-        version: 3.0.0(ink@4.3.1)
-      ink-spinner:
-        specifier: ^5.0.0
-        version: 5.0.0(ink@4.3.1)(react@18.2.0)
-      log-symbols:
-        specifier: ^5.1.0
-        version: 5.1.0
-      ora:
-        specifier: ^7.0.1
-        version: 7.0.1
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      ws:
-        specifier: ^8.13.0
-        version: 8.13.0
-      yargs:
-        specifier: ^17.7.2
-        version: 17.7.2
-    devDependencies:
-      '@commitlint/cli':
-        specifier: ^17.1.2
-        version: 17.1.2
-      '@commitlint/config-conventional':
-        specifier: ^17.1.0
-        version: 17.1.0
-      '@tsconfig/node18':
-        specifier: ^18.2.0
-        version: 18.2.0
-      '@types/ink-spinner':
-        specifier: ^3.0.1
-        version: 3.0.1
-      '@types/node':
-        specifier: '18'
-        version: 18.17.3
-      '@types/react':
-        specifier: ^18.2.19
-        version: 18.2.19
-      '@types/ws':
-        specifier: ^8.5.5
-        version: 8.5.5
-      '@types/yargs':
-        specifier: ^17.0.24
-        version: 17.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: 5.38.1
-        version: 5.38.1(@typescript-eslint/parser@5.38.1)(eslint@8.24.0)(typescript@5.1.6)
-      '@typescript-eslint/parser':
-        specifier: 5.38.1
-        version: 5.38.1(eslint@8.24.0)(typescript@5.1.6)
-      '@vitest/coverage-v8':
-        specifier: ^0.34.1
-        version: 0.34.1(vitest@0.34.1)
-      aws-cdk:
-        specifier: ^2.93.0
-        version: 2.93.0
-      aws-cdk-lib:
-        specifier: ^2.97.0
-        version: 2.97.0(constructs@10.2.70)
-      aws-sdk:
-        specifier: ^2.1445.0
-        version: 2.1445.0
-      eslint:
-        specifier: 8.24.0
-        version: 8.24.0
-      eslint-config-prettier:
-        specifier: ^8.5.0
-        version: 8.5.0(eslint@8.24.0)
-      eslint-plugin-node:
-        specifier: ^11.1.0
-        version: 11.1.0(eslint@8.24.0)
-      eslint-plugin-prettier:
-        specifier: ^4.2.1
-        version: 4.2.1(eslint-config-prettier@8.5.0)(eslint@8.24.0)(prettier@2.7.1)
-      eslint-plugin-react:
-        specifier: ^7.31.8
-        version: 7.31.8(eslint@8.24.0)
-      eslint-plugin-simple-import-sort:
-        specifier: ^7.0.0
-        version: 7.0.0(eslint@8.24.0)
-      husky:
-        specifier: 8.0.1
-        version: 8.0.1
-      lint-staged:
-        specifier: 11.2.6
-        version: 11.2.6
-      prettier:
-        specifier: 2.7.1
-        version: 2.7.1
-      semantic-release:
-        specifier: ^21.1.1
-        version: 21.1.1
-      tsup:
-        specifier: ^7.2.0
-        version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
-      typescript:
-        specifier: ^5.1.6
-        version: 5.1.6
-      vitest:
-        specifier: ^0.34.1
-        version: 0.34.1
+devDependencies:
+  '@commitlint/cli':
+    specifier: ^17.1.2
+    version: 17.1.2
+  '@commitlint/config-conventional':
+    specifier: ^17.1.0
+    version: 17.1.0
+  '@tsconfig/node18':
+    specifier: ^18.2.0
+    version: 18.2.0
+  '@types/ink-spinner':
+    specifier: ^3.0.1
+    version: 3.0.1
+  '@types/node':
+    specifier: '18'
+    version: 18.17.3
+  '@types/react':
+    specifier: ^18.2.19
+    version: 18.2.19
+  '@types/symlink-or-copy':
+    specifier: ^1.2.0
+    version: 1.2.0
+  '@types/ws':
+    specifier: ^8.5.5
+    version: 8.5.5
+  '@types/yargs':
+    specifier: ^17.0.24
+    version: 17.0.24
+  '@typescript-eslint/eslint-plugin':
+    specifier: 5.38.1
+    version: 5.38.1(@typescript-eslint/parser@5.38.1)(eslint@8.24.0)(typescript@5.1.6)
+  '@typescript-eslint/parser':
+    specifier: 5.38.1
+    version: 5.38.1(eslint@8.24.0)(typescript@5.1.6)
+  '@vitest/coverage-v8':
+    specifier: ^0.34.1
+    version: 0.34.1(vitest@0.34.1)
+  aws-cdk:
+    specifier: ^2.93.0
+    version: 2.93.0
+  aws-cdk-lib:
+    specifier: ^2.97.0
+    version: 2.97.0(constructs@10.2.70)
+  aws-sdk:
+    specifier: ^2.1445.0
+    version: 2.1445.0
+  eslint:
+    specifier: 8.24.0
+    version: 8.24.0
+  eslint-config-prettier:
+    specifier: ^8.5.0
+    version: 8.5.0(eslint@8.24.0)
+  eslint-plugin-node:
+    specifier: ^11.1.0
+    version: 11.1.0(eslint@8.24.0)
+  eslint-plugin-prettier:
+    specifier: ^4.2.1
+    version: 4.2.1(eslint-config-prettier@8.5.0)(eslint@8.24.0)(prettier@2.7.1)
+  eslint-plugin-react:
+    specifier: ^7.31.8
+    version: 7.31.8(eslint@8.24.0)
+  eslint-plugin-simple-import-sort:
+    specifier: ^7.0.0
+    version: 7.0.0(eslint@8.24.0)
+  husky:
+    specifier: 8.0.1
+    version: 8.0.1
+  lint-staged:
+    specifier: 11.2.6
+    version: 11.2.6
+  prettier:
+    specifier: 2.7.1
+    version: 2.7.1
+  semantic-release:
+    specifier: ^21.1.1
+    version: 21.1.1
+  tsup:
+    specifier: ^7.2.0
+    version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
+  typescript:
+    specifier: ^5.1.6
+    version: 5.1.6
+  vitest:
+    specifier: ^0.34.1
+    version: 0.34.1
 
 packages:
 
@@ -191,6 +195,10 @@ packages:
       '@babel/helper-validator-identifier': 7.22.5
       chalk: 2.4.2
       js-tokens: 4.0.0
+    dev: true
+
+  /@balena/dockerignore@1.0.2:
+    resolution: {integrity: sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==}
     dev: true
 
   /@baselime/paginate-aws@1.0.6:
@@ -991,6 +999,10 @@ packages:
   /@types/scheduler@0.16.3:
     resolution: {integrity: sha512-5cJ8CB4yAx7BH1oMvdU0Jh9lrEXyPkar6F9G/ERswkCuvP4KQZfZkSjcMbAICCpQTN4OuZn8tz0HiKv9TGZgrQ==}
 
+  /@types/symlink-or-copy@1.2.0:
+    resolution: {integrity: sha512-Lja2xYuuf2B3knEsga8ShbOdsfNOtzT73GyJmZyY7eGl2+ajOqrs8yM5ze0fsSoYwvA6bw7/Qr7OZ7PEEmYwWg==}
+    dev: true
+
   /@types/ws@8.5.5:
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
     dependencies:
@@ -1447,7 +1459,17 @@ packages:
       '@aws-cdk/asset-awscli-v1': 2.2.200
       '@aws-cdk/asset-kubectl-v20': 2.1.2
       '@aws-cdk/asset-node-proxy-agent-v6': 2.0.1
+      '@balena/dockerignore': 1.0.2
+      case: 1.6.3
       constructs: 10.2.70
+      fs-extra: 11.1.1
+      ignore: 5.2.4
+      jsonschema: 1.4.1
+      minimatch: 3.1.2
+      punycode: 2.3.0
+      semver: 7.5.4
+      table: 6.8.1
+      yaml: 1.10.2
     dev: true
     bundledDependencies:
       - '@balena/dockerignore'
@@ -1593,6 +1615,11 @@ packages:
     dependencies:
       ansicolors: 0.3.2
       redeyed: 2.1.1
+    dev: true
+
+  /case@1.6.3:
+    resolution: {integrity: sha512-mzDSXIPaFwVDvZAHqZ9VlbyF4yyXRuX6IvB06WvPYkqJVO24kX1PPhv9bfpKNFZyxYFmmgo03HUiD8iklmJYRQ==}
+    engines: {node: '>= 0.8.0'}
     dev: true
 
   /cfn-resolver-lib@1.1.8:
@@ -3484,6 +3511,10 @@ packages:
     engines: {'0': node >= 0.2.0}
     dev: true
 
+  /jsonschema@1.4.1:
+    resolution: {integrity: sha512-S6cATIPVv1z0IlxdN+zUk5EPjkGCdnhN4wVSBlvoUO1tOLJootbo9CquNJmbIh4yikWHiUedhRYrNPn1arpEmQ==}
+    dev: true
+
   /jsx-ast-utils@3.3.5:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
     engines: {node: '>=4.0'}
@@ -3664,6 +3695,10 @@ packages:
 
   /lodash.startcase@4.4.0:
     resolution: {integrity: sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg==}
+    dev: true
+
+  /lodash.truncate@4.4.2:
+    resolution: {integrity: sha512-jttmRe7bRse52OsWIMDLaXxWqRAmtIUccAQ3garviCqJjafXOfNMO0yMfNpdD6zbGaTU0P5Nz7e7gAT6cKmJRw==}
     dev: true
 
   /lodash.union@4.6.0:
@@ -5191,6 +5226,21 @@ packages:
   /supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  /symlink-or-copy@1.3.1:
+    resolution: {integrity: sha512-0K91MEXFpBUaywiwSSkmKjnGcasG/rVBXFLJz5DrgGabpYD6N+3yZrfD6uUIfpuTu65DZLHi7N8CizHc07BPZA==}
+    dev: false
+
+  /table@6.8.1:
+    resolution: {integrity: sha512-Y4X9zqrCftUhMeH2EptSSERdVKt/nEdijTOacGD/97EKjhQ/Qs8RTlEGABSJNNN8lac9kheH+af7yAkEWlgneA==}
+    engines: {node: '>=10.0.0'}
+    dependencies:
+      ajv: 8.12.0
+      lodash.truncate: 4.4.2
+      slice-ansi: 4.0.0
+      string-width: 4.2.3
+      strip-ansi: 6.0.1
+    dev: true
 
   /temp-dir@3.0.0:
     resolution: {integrity: sha512-nHc6S/bwIilKHNRgK/3jlhDoIHcp45YgyiwcAk46Tr0LfEqGBVpmiAyuiuxeVE44m3mXnEeVhaipLOEWmH+Njw==}
