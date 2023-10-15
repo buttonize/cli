@@ -18,20 +18,51 @@ const sendResponse = ({
 	}
 }
 
+console.log('forked.ts loaded')
+
 export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
 	const stacks: CdkForkedStacks = {}
 	const errors: string[] = []
 
 	try {
+		console.log(
+			path.join(
+				process.platform === 'win32' ? 'file://' : '',
+				tmpDir,
+				'node_modules',
+				'aws-cdk-lib',
+				'index.js'
+			)
+		)
 		const { App, Stack } = await import(
-			path.join(tmpDir, 'node_modules', 'aws-cdk-lib', 'index.js')
+			path.join(
+				process.platform === 'win32' ? 'file://' : '',
+				tmpDir,
+				'node_modules',
+				'aws-cdk-lib',
+				'index.js'
+			)
 		)
 
 		const { Template } = await import(
-			path.join(tmpDir, 'node_modules', 'aws-cdk-lib', 'assertions', 'index.js')
+			path.join(
+				process.platform === 'win32' ? 'file://' : '',
+				tmpDir,
+				'node_modules',
+				'aws-cdk-lib',
+				'assertions',
+				'index.js'
+			)
 		)
 
-		const binFile = await import(path.join(tmpDir, 'bin', 'cdk.js'))
+		const binFile = await import(
+			path.join(
+				process.platform === 'win32' ? 'file://' : '',
+				tmpDir,
+				'bin',
+				'cdk.js'
+			)
+		)
 
 		for (const [, variableValue] of Object.entries(binFile)) {
 			if (variableValue instanceof App) {

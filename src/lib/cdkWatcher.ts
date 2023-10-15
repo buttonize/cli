@@ -35,7 +35,14 @@ export const createCdkWatcher = async ({
 }): Promise<{ cdkEmitter: CdkWatcherEmitter; close: () => void }> => {
 	const importedTs = (
 		await import(
-			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
+			path.join(
+				process.platform === 'win32' ? 'file://' : '',
+				tmpDir,
+				'node_modules',
+				'typescript',
+				'lib',
+				'typescript.js'
+			)
 		)
 	).default as typeof ts
 
