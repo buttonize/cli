@@ -18,22 +18,11 @@ const sendResponse = ({
 	}
 }
 
-console.log('forked.ts loaded')
-
 export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
 	const stacks: CdkForkedStacks = {}
 	const errors: string[] = []
 
 	try {
-		console.log(
-			path.join(
-				process.platform === 'win32' ? 'file://' : '',
-				tmpDir,
-				'node_modules',
-				'aws-cdk-lib',
-				'index.js'
-			)
-		)
 		const { App, Stack } = await import(
 			path.join(
 				process.platform === 'win32' ? 'file://' : '',
