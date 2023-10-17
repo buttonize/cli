@@ -1,5 +1,6 @@
 import type { App as AppType, Stack as StackType } from 'aws-cdk-lib'
 import type { Template as TemplateType } from 'aws-cdk-lib/assertions'
+import { pathToFileURL } from 'node:url'
 import * as path from 'path'
 
 import { CdkForkedErrors, CdkForkedInput, CdkForkedStacks } from './types.js'
@@ -24,33 +25,25 @@ export const forked = async ({ tmpDir }: CdkForkedInput): Promise<void> => {
 
 	try {
 		const { App, Stack } = await import(
-			path.join(
-				process.platform === 'win32' ? 'file://' : '',
-				tmpDir,
-				'node_modules',
-				'aws-cdk-lib',
-				'index.js'
-			)
+			pathToFileURL(
+				path.join(tmpDir, 'node_modules', 'aws-cdk-lib', 'index.js')
+			).href
 		)
 
 		const { Template } = await import(
-			path.join(
-				process.platform === 'win32' ? 'file://' : '',
-				tmpDir,
-				'node_modules',
-				'aws-cdk-lib',
-				'assertions',
-				'index.js'
-			)
+			pathToFileURL(
+				path.join(
+					tmpDir,
+					'node_modules',
+					'aws-cdk-lib',
+					'assertions',
+					'index.js'
+				)
+			).href
 		)
 
 		const binFile = await import(
-			path.join(
-				process.platform === 'win32' ? 'file://' : '',
-				tmpDir,
-				'bin',
-				'cdk.js'
-			)
+			pathToFileURL(path.join(tmpDir, 'bin', 'cdk.js')).href
 		)
 
 		for (const [, variableValue] of Object.entries(binFile)) {

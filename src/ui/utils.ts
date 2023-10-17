@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import path from 'path'
 import type * as ts from 'typescript'
 
@@ -7,14 +8,9 @@ export const formatTsErrorMessage = async (
 ): Promise<string> => {
 	const importedTs = (
 		await import(
-			path.join(
-				process.platform === 'win32' ? 'file://' : '',
-				tmpDir,
-				'node_modules',
-				'typescript',
-				'lib',
-				'typescript.js'
-			)
+			pathToFileURL(
+				path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
+			).href
 		)
 	).default as typeof ts
 
