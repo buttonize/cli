@@ -6,7 +6,11 @@ import { isVerbose } from './utils.js'
 
 export const buildCdkTree = (tmpDir: string): Promise<CdkForkedOutput> =>
 	new Promise<CdkForkedOutput>((resolve, reject) => {
-		const cwd = path.dirname(import.meta.url.replace('file:///', ''))
+		const filePath =
+			process.platform === 'win32'
+				? import.meta.url.replace('file:///', '')
+				: import.meta.url.replace('file://', '')
+		const cwd = path.dirname(filePath)
 
 		const forked = fork('forked.js', {
 			silent: !isVerbose(),
