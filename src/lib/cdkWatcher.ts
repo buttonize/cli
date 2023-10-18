@@ -1,5 +1,6 @@
 import cpx2 from 'cpx2'
 import { EventEmitter } from 'events'
+import { pathToFileURL } from 'node:url'
 import * as path from 'path'
 import type * as ts from 'typescript'
 
@@ -35,7 +36,9 @@ export const createCdkWatcher = async ({
 }): Promise<{ cdkEmitter: CdkWatcherEmitter; close: () => void }> => {
 	const importedTs = (
 		await import(
-			path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
+			pathToFileURL(
+				path.join(tmpDir, 'node_modules', 'typescript', 'lib', 'typescript.js')
+			).href
 		)
 	).default as typeof ts
 
