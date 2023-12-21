@@ -231,17 +231,14 @@ export const extractAppsFromStacks = async (
 				executionRoleExternalId:
 					rawAppTemplate.Properties.ExecutionRoleExternalId,
 				label: rawAppTemplate.Properties.Label,
-				pages: rawAppPages.reduce<Apps[string][string]['pages']>(
-					(acc, [, rawPageTemplate]) => ({
-						...acc,
-						[rawPageTemplate.Properties.PageIdName]: {
-							body: JSON.parse(rawPageTemplate.Properties.Body),
-							label: rawPageTemplate.Properties.Label,
-							docs: rawPageTemplate.Properties.Docs,
-							isFirstPage: rawPageTemplate.Properties.IsFirstPage === 'true'
-						}
-					}),
-					{}
+				pages: rawAppPages.map<Apps[string][string]['pages'][number]>(
+					([, rawPageTemplate]) => ({
+						pageIdName: rawPageTemplate.Properties.PageIdName,
+						body: JSON.parse(rawPageTemplate.Properties.Body),
+						label: rawPageTemplate.Properties.Label,
+						docs: rawPageTemplate.Properties.Docs,
+						isFirstPage: rawPageTemplate.Properties.IsFirstPage === 'true'
+					})
 				)
 			}
 		}

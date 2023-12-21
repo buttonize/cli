@@ -5,13 +5,12 @@ export type Apps = {
 			executionRoleArn?: string
 			executionRoleExternalId?: string
 			pages: {
-				[pageId: string]: {
-					label: string
-					docs?: string
-					isFirstPage: boolean
-					body: SerializedComponent[]
-				}
-			}
+				pageIdName: string
+				label: string
+				docs?: string
+				isFirstPage: boolean
+				body: SerializedComponent[]
+			}[]
 			docs?: string
 		}
 	}
