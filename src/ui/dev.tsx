@@ -124,7 +124,7 @@ export const Dev: React.FC<DevProps> = ({
 		}
 	}, [])
 
-	const debugLink = `http://localhost:3000/v2?port=${encodeURIComponent(
+	const debugLink = `https://app.buttonize.io/live?port=${encodeURIComponent(
 		(wsServer.address() as AddressInfo).port
 	)}`
 
